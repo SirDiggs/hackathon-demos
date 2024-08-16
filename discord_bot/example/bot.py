@@ -1,43 +1,43 @@
-import discord # type: ignore
-import configparser
-import ollama
+from discord import Intents, Interaction, Message # type: ignore
+from discord.ext.commands import Bot # type: ignore
+from configparser import ConfigParser
+from ollama import pull, list, chat
+from logging import FileHandler
 
-config = configparser.ConfigParser()
-
+config = ConfigParser()
 config.read('config.ini')
-
 token=config["Discord"]["token"]
-
-def generate(message):
-    if not "llama3:8b" in ollama.list().get("models"): ollama.pull("llama3:8b")
-    messages=[{"role":"user","content":message}]
-    try:
-        response=ollama.chat(model="llama3:8b",messages=messages)
-    except:
-        response={"message":{"content":"Error"}}
-    return response.get("message",{}).get("content","Error")
-
-class MyClient(discord.Client):
-    async def on_ready(self):
-        print(f'Logged on as {self.user}!')
-
-    async def on_message(self, message):
-        # Check if the message is from the specified channel
-        target_channel_id = 1273808145143173207  # Replace with your channel ID
-        if message.channel.id != target_channel_id:
-            return  # Ignore messages not from the specified channel
-
-        # Check if the message starts with the specific command
-        if message.content.startswith("!bot-reply"):  # Replace with your command
-            args = message.content.split()[1:]  # Split by spaces and skip the command itself
-            if args:
-                response = generate(" ".join(args))
-            else:
-                response = "No message."
-            await message.channel.send(response)
-
-intents = discord.Intents.default()
+channel=config["Discord"]["channel"]
+model=config["Ollama"]["model"]
+intents=Intents.default()
 intents.message_content = True
+bot=Bot(command_prefix="/",intents=intents)
+log_handler=FileHandler(filename="discord.log",encoding="utf-8",mode="w")
 
-client = MyClient(intents=intents)
-client.run(token)
+@bot.tree.command(name="reply", description="Replies to a message using the AI model")
+async def reply(interaction:Interaction, message:str):
+    if interaction.channel.id != int(channel):
+        await interaction.response.send_message("Why don't you meet me in the bot-channel :stuck_out_tongue_winking_eye:", ephemeral=True)
+        return
+    messages=[]
+    async for msg in interaction.channel.history(limit=20):
+        messages.append({"role": "user" if msg.author != bot.user else "assistant", "content": msg.content})
+    messages.reverse()
+    print(messages)
+    messages.append({"role": "user", "content": message})
+    await interaction.response.defer()
+    try:
+        async with interaction.channel.typing():
+            if model not in list().get("models"):
+                pull(model)
+            response = chat(model=model, messages=messages, options={"num_predict": 1000})
+    except Exception as e:
+        response = {"message": {"content": "Error"}}
+    await interaction.followup.send(response.get("message", {}).get("content", "Error"))
+
+@bot.event
+async def on_ready():
+    await bot.tree.sync()
+    print(f"Logged in as {bot.user}")
+
+bot.run(token, log_handler=log_handler)
