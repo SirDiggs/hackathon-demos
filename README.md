@@ -8,7 +8,7 @@ source venv/Scripts/activate
 
 pip install -r ollama/requirements.txt
 
-docker run -p 11434:11434 ollama/ollama -this takes long cause its pulling shit
+docker run -p 11434:11434 ollama/ollama -this takes long cause its pulling the model
 
     To mount to save runtime
     add -v <anywhere on host>:/root/.ollama/models
@@ -20,7 +20,7 @@ pip install tensorflow
 
 pip install accelerate 
 
-make huggingface account give into your facebook overlords
+make huggingface account 
 
 run dat shit it takes a minute
 transformers takes longer
