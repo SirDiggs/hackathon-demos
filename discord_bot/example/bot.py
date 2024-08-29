@@ -14,8 +14,8 @@ intents.message_content = True
 bot=Bot(command_prefix="/",intents=intents)
 log_handler=FileHandler(filename="discord.log",encoding="utf-8",mode="w")
 
-@bot.tree.command(name="reply", description="Replies to a message using the AI model")
-async def reply(interaction:Interaction, message:str):
+@bot.tree.command(name="cbt", description="Replies to a message using the AI model")
+async def cbt(interaction:Interaction, message:str):
     if interaction.channel.id != int(channel):
         await interaction.response.send_message("Why don't you meet me in the bot-channel :stuck_out_tongue_winking_eye:", ephemeral=True)
         return
@@ -23,7 +23,7 @@ async def reply(interaction:Interaction, message:str):
     async for msg in interaction.channel.history(limit=20):
         messages.append({"role": "user" if msg.author != bot.user else "assistant", "content": msg.content})
     messages.reverse()
-    print(messages)
+    # print(messages)
     messages.append({"role": "user", "content": message})
     await interaction.response.defer()
     try:
